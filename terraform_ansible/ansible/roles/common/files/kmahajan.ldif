@@ -1,0 +1,16 @@
+dn: uid=kmahajan,ou=people,dc=mland,dc=co,dc=uk
+objectClass: top
+objectClass: account
+objectClass: posixAccount
+objectClass: shadowAccount
+cn: cjain
+uid: cjain
+uidNumber: 16860
+gidNumber: 100
+homeDirectory: /home/kmahajan
+loginShell: /bin/bash
+gecos: kmahajan
+userPassword: Password@1
+shadowLastChange: 0
+shadowMax: 0
+shadowWarning: 0

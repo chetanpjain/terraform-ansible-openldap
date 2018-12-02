@@ -1,0 +1,22 @@
+# mland.co.uk
+dn: dc=mland,dc=co,dc=uk
+objectClass: top
+objectClass: dcObject
+objectClass: organization
+o: mland.co.uk
+dc: mland
+
+# Group - People
+dn: ou=People,dc=mland,dc=co,dc=uk
+changetype: add
+objectclass: top
+objectclass: organizationalUnit
+ou: People
+
+
+# Group - Groups
+dn: ou=Groups,dc=mland,dc=co,dc=uk
+changetype: add
+objectclass: top
+objectclass: organizationalUnit
+ou: Groups

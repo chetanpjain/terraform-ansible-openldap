@@ -1,0 +1,23 @@
+---
+openldap_confdir: /etc/openldap
+openldap_user: ldap
+openldap_group: ldap
+openldap_datadir: /var/openldap-data
+openldap_db_engine: hdb
+openldap_modsdir:
+slapd_exec: /usr/local/libexec/slapd
+slapd_pidfile: /var/run/openldap/slapd.pid
+slapd_argsfile: /var/run/openldap/slapd.args
+base_dn: dc=mland,dc=co,dc=uk
+admin_user: cn=srvadmin
+temp_dir: /opt/
+clean_all: true
+ldap_http_port: 389
+replication_user_dn: uid=rpuser,dc=mland,dc=co,dc=uk
+repl_user_password: redhat
+ldap_master_url: ldap://10.0.0.11:389/
+ldap_server_one: ldap://10.0.0.11:389/
+ldap_server_two: ldap://10.0.0.130:389/
+ldap_server_three: ldap://10.0.0.164:389/
+ldap_uri: ldap://10.0.0.11:389/ ldap://10.0.0.130:389/ ldap://10.0.0.164:389/
+realm_name: MLAND.CO.UK

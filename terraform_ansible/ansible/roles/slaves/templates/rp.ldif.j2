@@ -1,0 +1,14 @@
+dn: olcDatabase={2}hdb,cn=config
+changetype: modify
+add: olcSyncRepl
+olcSyncRepl: rid=001
+  provider={{ldap_master_url}}
+  bindmethod=simple
+  binddn={{replication_user_dn}}
+  credentials={{repl_user_password}}
+  searchbase={{base_dn}}
+  scope=sub
+  schemachecking=on
+  type=refreshAndPersist
+  retry="30 5 300 3"
+  interval=00:00:05:00

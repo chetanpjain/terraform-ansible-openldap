@@ -1,0 +1,8 @@
+---
+
+- include: master.yml
+- include: slaves.yml
+- hosts: all
+  roles:
+     - common
+

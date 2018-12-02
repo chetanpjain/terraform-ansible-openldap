@@ -1,0 +1,91 @@
+---
+- hosts : all
+  tasks:
+    - name: Install required packages for openldap
+      become: true
+      yum : name={{ item }} state=present
+      with_items:
+        - openldap
+        - compat-openldap
+        - openldap-clients 
+        - openldap-servers 
+        - openldap-servers-sql 
+        - openldap-devel
+        - python-ldap
+        - phpldapadmin
+    
+    - name: Stop OpenLDAP Server
+      systemd:
+        name: slapd
+        state: stopped
+      when: clean_all
+
+    - name: List OpenLDAP Files
+      command: "ls /var/lib/ldap"
+      register: ldap_files
+      when: clean_all
+    
+    - name: Remove OpenLDAP Data
+      file: path="/var/lib/ldap/{{item}}" state=absent force=true
+      with_items: "{{ldap_files.stdout_lines}}"
+      when: clean_all
+
+    - name: Start OpenLDAP Server
+      systemd:
+        name: slapd
+        state: started
+        enabled: True 
+    
+    - name: Get RootPW for openLDAP
+      shell: "slappasswd -s redhat"
+      register: ldap_root_rw
+
+    - name: Set RootPW as var
+      set_fact:
+        ROOT_PW: "{{ldap_root_rw.stdout}}"
+
+    - name: Copy db.ldif file to {{temp_dir}}
+      template: src="db.ldif.j2" dest={{ temp_dir }}/db.ldif
+
+    - name: Modify ldap with db.ldif
+      shell: ldapmodify -Y EXTERNAL  -H ldapi:/// -f {{temp_dir}}/db.ldif
+
+    - name: Copy monitor.ldif to {{temp_dir}}
+      template: src="monitor.ldif.j2" dest={{temp_dir}}/monitor.ldif
+
+    - name: Modify ldap with monitor.ldif
+      shell: ldapmodify -Y EXTERNAL  -H ldapi:/// -f {{temp_dir}}/monitor.ldif
+
+    - name: Start OpenLDAP Server
+      systemd:
+       name: slapd
+       state: restarted
+
+    - name: Check if cosine/nis/inetorgperson data exist(1)
+      shell: "ldapsearch -Y EXTERNAL -H ldapi:/// -b \"cn=schema,cn=config\" |egrep '^cn(.*cosine|.*nis|.*inetorgperson)'> ldapsearch_cosine_nis_inet"
+      ignore_errors: yes
+
+    - name: Check if cosine/nis/inetorgperson data exist(2)
+      shell: "cat ldapsearch_cosine_nis_inet|wc -l"
+      register: default_data_exist
+
+    - name: Setup ldap with default example ldif files
+      copy: src=/usr/share/openldap-servers/DB_CONFIG.example dest=/var/lib/ldap/DB_CONFIG remote_src=yes 
+
+    - name: Change UID/GID of /var/lib/ldap/*
+      file:
+        path: /var/lib/ldap
+        owner: ldap
+        group: ldap
+        recurse: yes
+
+    - name: Add cosine/nis/inetoragperson ldif to ldap server
+      shell: ldapadd -Y EXTERNAL -H ldapi:/// -f /etc/openldap/schema/{{item}}
+      with_items:
+       - cosine.ldif
+       - nis.ldif
+       - inetorgperson.ldif
+      when: default_data_exist.stdout|int < 3
+
+    - name: Copy base.ldif to {{temp_dir}} > this is the default user/group data
+      copy: src=base.ldif dest="{{temp_dir}}/base.ldif"

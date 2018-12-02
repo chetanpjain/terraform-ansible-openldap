@@ -1,0 +1,15 @@
+---
+openldap_confdir: /etc/openldap
+openldap_user: ldap
+openldap_group: ldap
+openldap_datadir: /var/openldap-data
+openldap_db_engine: hdb
+openldap_modsdir:
+slapd_exec: /usr/local/libexec/slapd
+slapd_pidfile: /var/run/openldap/slapd.pid
+slapd_argsfile: /var/run/openldap/slapd.args
+base_dn: dc=mland,dc=co,dc=uk
+admin_user: cn=srvadmin
+temp_dir: /opt/
+clean_all: true
+ldap_http_port: 389

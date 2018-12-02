@@ -1,0 +1,154 @@
+---
+#tasks:
+  - name: Install required packages for openldap
+    become: true
+    yum : name={{ item }} state=present
+    with_items:
+      - openldap
+      - compat-openldap
+      - openldap-clients 
+      - openldap-servers 
+      - openldap-servers-sql 
+      - openldap-devel
+      - python-ldap
+      - phpldapadmin
+    
+  - name: Stop OpenLDAP Server
+    systemd:
+      name: slapd
+      state: stopped
+    when: clean_all
+
+  - name: List OpenLDAP Files
+    command: "ls /var/lib/ldap"
+    register: ldap_files
+    when: clean_all
+    
+  - name: Remove OpenLDAP Data
+    file: path="/var/lib/ldap/{{item}}" state=absent force=true
+    with_items: "{{ldap_files.stdout_lines}}"
+    when: clean_all
+
+  - name: Start OpenLDAP Server
+    systemd:
+      name: slapd
+      state: started
+      enabled: True 
+    
+  - name: Get RootPW for openLDAP
+    shell: "slappasswd -s redhat"
+    register: ldap_root_rw
+
+  - name: Set RootPW as var
+    set_fact:
+      ROOT_PW: "{{ldap_root_rw.stdout}}"
+
+  - name: Copy db.ldif file to {{temp_dir}}
+    template: src="db.ldif.j2" dest={{ temp_dir }}/db.ldif
+
+  - name: Modify ldap with db.ldif
+    shell: ldapmodify -Y EXTERNAL  -H ldapi:/// -f {{temp_dir}}/db.ldif
+
+  - name: Copy monitor.ldif to {{temp_dir}}
+    template: src="monitor.ldif.j2" dest={{temp_dir}}/monitor.ldif
+
+  - name: Modify ldap with monitor.ldif
+    shell: ldapmodify -Y EXTERNAL  -H ldapi:/// -f {{temp_dir}}/monitor.ldif
+
+  - name: Start OpenLDAP Server
+    systemd:
+     name: slapd
+     state: restarted
+
+  - name: Check if cosine/nis/inetorgperson data exist(1)
+    shell: "ldapsearch -Y EXTERNAL -H ldapi:/// -b \"cn=schema,cn=config\" |egrep '^cn(.*cosine|.*nis|.*inetorgperson)'> ldapsearch_cosine_nis_inet"
+    ignore_errors: yes
+
+  - name: Check if cosine/nis/inetorgperson data exist(2)
+    shell: "cat ldapsearch_cosine_nis_inet|wc -l"
+    register: default_data_exist
+
+  - name: Setup ldap with default example ldif files
+    copy: src=/usr/share/openldap-servers/DB_CONFIG.example dest=/var/lib/ldap/DB_CONFIG remote_src=yes 
+
+  - name: Change UID/GID of /var/lib/ldap/*
+    file:
+      path: /var/lib/ldap
+      owner: ldap
+      group: ldap
+      recurse: yes
+
+  - name: Add cosine/nis/inetoragperson ldif to ldap server
+    shell: ldapadd -Y EXTERNAL -H ldapi:/// -f /etc/openldap/schema/{{item}}
+    with_items:
+     - cosine.ldif
+     - nis.ldif
+     - inetorgperson.ldif
+    when: default_data_exist.stdout|int < 3
+
+  - name: Copy base.ldif to {{temp_dir}} > this is the default user/group data
+    copy: src=base.ldif dest="{{temp_dir}}/base.ldif"
+
+  - name: Add the default user/group data with base.ldif 
+    shell: ldapadd -x -w redhat -D "{{admin_user}},{{base_dn}}" -f {{temp_dir}}/base.ldif
+    when: clean_all
+
+  - name: copy replication_user.ldif to {{ temp_dir }} 
+    template: src="rpuser.ldif.j2" dest={{ temp_dir }}/rpuser.ldif
+
+  - name: Add Replication user in master ldap
+    shell: ldapadd -x -w redhat -D "{{admin_user}},{{base_dn}}" -f {{temp_dir}}/rpuser.ldif
+    when: clean_all
+
+  - name: Copy ldif for enabling sync provisioning
+    copy: src=syncprov_mod.ldif dest="{{temp_dir}}/syncprov_mod.ldif"
+
+  - name: Enable syncprov module on the master server
+    shell: ldapadd -Y EXTERNAL -H ldapi:/// -f {{temp_dir}}/syncprov_mod.ldif
+    when: clean_all
+
+  - name: Copy ldif for enabling sync provisioning for each directory
+    copy: src=syncprov.ldif dest="{{temp_dir}}/syncprov.ldif"
+
+  - name: Enable syncprov module on the master server
+    shell: ldapadd -Y EXTERNAL -H ldapi:/// -f {{temp_dir}}/syncprov.ldif
+    when: clean_all
+
+  #- name: set LDAP authentication
+   # ldap_auth: 
+    #  server_uri: ldap://localhost
+     # bind_dn: {{admin_user}},{{base_dn}}
+     # bind_pw: {{ ROOT_PW }}
+      
+  
+  - name: Make sure below users are present
+    ldap_entry:
+        dn: uid={{ item.value.userid }},ou=people,dc=mland,dc=co,dc=uk
+        objectClass:
+          - top
+          - Account
+          - PosixAccount
+          - ShadowAccount
+        attributes:
+          userPassword: "{{ item.value.userPassword }}"
+          cn: "{{ item.value.cn }}"
+          uid: "{{ item.value.userid }}"
+          uidNumber: "{{ item.value.uid }}"
+          gidNumber: "{{ item.value.gid }}"
+          homeDirectory: "{{ item.value.homedir }}"
+          loginShell: /bin/bash
+          gecos: "{{ item.value.userid }}"
+          shadowLastChange: 0
+          shadowMax: 0
+          shadowWarning: 0
+        state: present
+        params: "{{ ldap_auth }}"
+    with_dict: "{{ user_present }}"
+      
+  - name: Make sure below users are not present
+    ldap_entry: 
+        dn: uid={{ item }},ou=people,dc=mland,dc=co,dc=uk
+        state: absent
+        params: "{{ ldap_auth }}"
+    with_items: "{{ user_remove }}"
+     

@@ -1,0 +1,53 @@
+---
+
+- name: Install SSSD, LDAP and related stuff
+  yum: pkg={{ item }} state=installed
+  with_items:
+    - sssd
+    - authconfig
+    - sssd-client
+    - openldap
+    - openldap-clients
+    - openldap-devel
+    - autofs
+    - nfs-utils
+
+- name: ldap client configuration
+  template: src=ldap.conf.j2 dest=/etc/openldap/ldap.conf backup=yes
+  
+
+- name: Configure SSSD to use for LDAP authentication
+  template: src=sssd.conf.j2 dest=/etc/sssd/sssd.conf
+            owner=root
+            group=root
+            mode=0600
+  notify: restart sssd
+
+
+- name: Ensure SSSD, autofs and rpcbind services are started and enabled on boot
+  service: name={{ item }} state=started enabled=yes
+  with_items:
+    - sssd
+    
+#- name: Ensure rpc-statd is started
+#  service: name=rpc-statd state=started enabled=yes
+#  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == 7
+
+- name: Check if authconfig did a previous run
+  command: "/bin/egrep '^auth.*sufficient.*pam_sss.so' /etc/pam.d/system-auth"
+  register: authconfig_run
+  changed_when: false
+  ignore_errors: true
+
+- name: Configure Server to use SSD for authentication
+  shell: /usr/sbin/authconfig  --enableldap --ldapserver=\"{{ ldap_server_one }},{{ ldap_server_two }}\" --ldapbasedn={{ base_dn }} --enablesssd --enablesssdauth --enablelocauthorize --disableldaptls --disablenis --disablefingerprint --enablecache --disablesysnetauth --disablesmartcard  --disablerequiresmartcard --enablemkhomedir --updateall
+  when: (authconfig_run.rc != 0) and (ansible_distribution_major_version >= 6)
+  notify: restart sssd
+
+- name: nsswitch | configure the nswitch.conf file
+  template: src=nsswitch.conf.j2
+            dest=/etc/nsswitch.conf
+            owner=root
+            group=root
+            mode=644 
+

@@ -1,0 +1,44 @@
+---
+openldap_confdir: /etc/openldap
+openldap_user: ldap
+openldap_group: ldap
+openldap_datadir: /var/openldap-data
+openldap_db_engine: hdb
+openldap_modsdir:
+slapd_exec: /usr/local/libexec/slapd
+slapd_pidfile: /var/run/openldap/slapd.pid
+slapd_argsfile: /var/run/openldap/slapd.args
+base_dn: dc=chetan,dc=com
+admin_user: cn=srvadmin
+temp_dir: /opt/
+clean_all: false
+ldap_http_port: 389
+replication_user_dn: uid=rpuser,dc=chetan,dc=com
+repl_user_password: redhat
+ldap_master_url: ldap://ip_of_master:389/
+ldap_server_one: ldap://ip_of_master:389/
+ldap_server_two: ldap://ip_of_slave1:389/
+ldap_server_three: ldap://ip_of_slave2:389/
+ldap_uri: ldap://ip_of_master:389/ ldap://ip_of_slave1:389/ ldap://ip_of_slave2:389/
+realm_name: CHETAN.COM
+ldap_auth:
+  server_uri: ldap://localhost
+  bind_dn: cn=srvadmin,dc=mland,dc=co,dc=uk
+  bind_pw: redhat
+user_present:
+  pjain:
+    userid: kmahajan
+    userPassword: ***********
+    cn: Priti Jain
+    uid: 16862
+    gid: 100
+    homedir: /home/pjain
+  cjain:
+    userid: cjain
+    userPassword: *********
+    cn: Chetan Jain
+    uid: 16859
+    gid: 100
+    homedir: /home/cjain
+user_remove:
+   mtest

@@ -1,0 +1,7 @@
+---
+
+- hosts: slaves
+  roles:
+    - slaves
+    - common
+
