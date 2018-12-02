@@ -10,13 +10,13 @@ variable "aws_key_name" {
 
 variable "aws_access_key" {
     description = "access key for aws"
-    default = "AKIAJI6SNNT2VK5PC34A"
+    default = "your_aws_access_key"
   
 }
 
 variable "aws_secret_key" {
     description = "secret key for aws"
-    default = "JC3YxhuDbb9XHP2H/C+u/kpcIXOCfgQg3VZGX2OX"
+    default = "your_aws_secret_key"
 }
 
 variable "amis" {
