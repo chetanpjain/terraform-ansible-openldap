@@ -1,4 +1,4 @@
-dn: uid=cjain,ou=people,dc=mland,dc=co,dc=uk
+dn: uid=cjain,ou=people,dc=test,dc=domain,dc=com
 objectClass: top
 objectClass: account
 objectClass: posixAccount
