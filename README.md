@@ -9,12 +9,7 @@ cd terraform_ansible
 terraform init
 terraform plan
 terraform apply
-*info
-	*master: 34.229.244.205
-	*slave1: 54.209.144.13
-	*slave2: 54.89.113.241
-	*client1: 54.211.83.65
-	*client2: 54.208.108.26
+
 Steps :
 
 Install terraform on your local system which has access to Internet
@@ -31,7 +26,7 @@ Now, pull the code repository on the ldap-master at location of your preference
 
 for that first install git and then perform below steps :
 
--- sudo yum install git -- git clone https://github.com/Mlandltd/ldap-ansible.git -- cd ldap_ansible -- git pull
+-- sudo yum install git -- git clone URL -- cd ldap_ansible -- git pull
 
 7.copy the ansible directory from the code checked out to this location : sudo cp -r terraform_ansible/ansible /etc/
 
